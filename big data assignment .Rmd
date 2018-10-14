@@ -1,0 +1,156 @@
+---
+title: "Big Data task Bed2056"
+author: "Ørjan Myrland"
+date: "9 10 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+sign 13-14 = Birth Month 
+sign 475 = Sex
+sign 504-507 = Birth Weight in gram  
+
+```{r, include = FALSE}
+rm(list = ls())
+library(tidyverse)
+library(tidyr)
+library(readr)
+library(utils)
+require(mosaic)
+library(readr)
+
+Nat2017 <- read_fwf("~/Desktop/Nat2017PublicUS.c20180516.r20180808.txt", 
+           fwf_positions(
+             start = c(13,475,504), 
+             end = c(14,475,507),
+          
+         col_names = c("month","sex", "weight")
+              )
+            )
+    
+Nat2017$weight <- as.numeric(Nat2017$weight)
+# Nat2017$month <- as.numeric(Nat2017$month)
+
+head(Nat2017$sex)
+head(Nat2017$weight)
+str(Nat2017)
+
+
+Nat2017 <- Nat2017 %>%  
+  filter(weight >= 0227) %>%
+  filter(weight <= 8165)
+
+favstats(Nat2017$month)
+favstats(Nat2017$weight)
+
+count(Nat2017)
+```
+
+What is the proportion of boys to girls?
+```{r}
+# filter for boys 
+NatM <-  filter(Nat2017, sex =="M")
+count(NatM)
+# 1 976 014 boys 
+
+
+# Filter for girls 
+NatF <- filter(Nat2017, sex =="F")
+count(NatF)
+# 1 885 707 girls
+
+
+# Proportion boys to girls  
+count(NatM)/count(NatF)
+# 1.04789
+```
+
+Average birth weight 
+```{r}
+mean(Nat2017$weight)
+# 3262,134 grams 
+```
+
+Make a density plot on the birth weight between boys and girls. Is it different?
+```{r}
+# Simple density plot between the two sexes 
+ggplot(Nat2017, aes(x = weight, color = sex)) +
+  geom_density()
+
+# More advanced densityplot with mean weight at birth
+
+# Mean of each group
+library(plyr)
+mu <- ddply(Nat2017, "sex", summarise, grp.mean=mean(weight))
+
+# Defining the plot
+p <- ggplot(Nat2017, aes(x = weight, fill = sex)) +
+  geom_density(alpha = 0.4)
+
+# Add mean lines and print the plot 
+p + geom_vline(data = mu, aes(xintercept=grp.mean, color = sex),
+             linetype="dashed")
+# The density is different as we can see. But not by much.
+```
+
+Does the average birth weight vary by month?
+```{r}
+Natjan <- filter(Nat2017, month == "01")
+Natfeb <- filter(Nat2017, month == "02")
+Natmar <- filter(Nat2017, month == "03")
+Natapr <- filter(Nat2017, month == "04")
+Natmai <- filter(Nat2017, month == "05")
+Natjun <- filter(Nat2017, month == "06")
+Natjul <- filter(Nat2017, month == "07")
+Nataug <- filter(Nat2017, month == "08")
+Natsep <- filter(Nat2017, month == "09")
+Natoct <- filter(Nat2017, month == "10")
+Natnov <- filter(Nat2017, month == "11")
+Natdes <- filter(Nat2017, month == "12")
+
+mean(Natjan$weight)
+mean(Natfeb$weight)
+mean(Natmar$weight)
+mean(Natapr$weight)
+mean(Natmai$weight)
+mean(Natjun$weight)
+mean(Natjul$weight)
+mean(Nataug$weight)
+mean(Natsep$weight)
+mean(Natoct$weight)
+mean(Natnov$weight)
+mean(Natdes$weight)
+
+monthlymean <- matrix(c(mean(Natjan$weight),mean(Natfeb$weight),mean(Natmar$weight),mean(Natapr$weight),mean(Natmai$weight),
+                        mean(Natjun$weight),mean(Natjul$weight),mean(Nataug$weight),mean(Natsep$weight),mean(Natoct$weight),
+                        mean(Natnov$weight),mean(Natdes$weight), ncol=12, byrow=TRUE))
+monthlymean <- monthlymean[-13,]
+monthlymean <- monthlymean[-13]
+monthlymean <- as.data.frame(monthlymean)
+colnames(monthlymean) <- "mean"
+rownames(monthlymean) <- c("Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Oct","Nov","Des") 
+
+knitr::kable(monthlymean)
+
+
+ggplot() +
+  geom_bar(stat = "identity", data = monthlymean, aes(x = c("Jan","Feb","Mar","Apr","Mai","Jun","Jul","Aug","Sep","Oct","Nov","Des"), y = mean)) +
+  labs(
+        title = "Mean weight per month",
+        x = "Month",
+        y = "Weight") 
+
+favstats(monthlymean$mean)
+
+# There is some difference in mean, but it is not much. September is highest with a mean of 3268,226 g and december is lowest with 3251,082 grams.
+
+3268.226-3251.082
+# The total difference beetween the highest and lowest month is only 17,144 grams so i would conclude that there is not much of a difference. 
+```
+
+
