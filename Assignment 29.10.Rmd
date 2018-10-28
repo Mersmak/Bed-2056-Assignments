@@ -1,0 +1,83 @@
+---
+title: "Assignment 29.10"
+author: "Ørjan Myrland"
+date: "28 10 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+```
+
+
+```{r} 
+# Task 1
+# Read data 
+DS = tribble(
+ ~fk_account_code, ~Ansvar, ~fk_function_code, ~fk_project_code, ~amount,
+ 101030,40220,"Det",3432,1493.00,
+ 101030,40220,"Met",3586,2827.00,
+ 101030,40320,"Det",3456,49440.00,
+ 101030,40330,"Sal",NA,870716.00,
+ 101030,40350,"Met",NA,559928.00,
+ 101030,40360,"Sal",NA,125534.00,
+ 101030,40280,"Pol",NA,251611.00)
+
+# 1) Remove project code from DS
+DS$fk_project_code <- NULL
+
+# 2) Sum the "amount" by the 3 first digits of "Ansvar"; 402, 403, etc.
+# Substringing Ansvar and making it numeric 
+DS$Ansvar3 <- substr(DS$Ansvar, 1, nchar(DS$Ansvar)-2)
+DS$Ansvar3 <- as.numeric(DS$Ansvar3)
+
+# Suming and making output as new variable 
+DS$Sum <- rowSums(DS[, c("Ansvar3", "amount")], na.rm=TRUE)
+DS$Sum
+
+# 3) Make new "labels" for "fk_function_code", where:
+#         "Det" and "Sal" is "supplies",
+#         "Met" is "inventories" and
+#         "Pol" is "other expenses"
+
+DS$fk_function_code <- c("supplies","inventories","supplies","supplies","inventories","supplies","other expenses")
+
+knitr::kable(DS)
+```
+
+
+```{r}
+# Task 2 
+# https://magesblog.com/post/2012-06-12-transforming-subsets-of-data-in-r-with/
+
+df <- data.frame(Product=gl(3,10,labels=c("A","B", "C")), 
+                Year=factor(rep(2002:2011,3)), 
+                Sales=1:30)
+
+
+# 1) Calculate the share of sales per product per year. The sum over the 3 shares per year is 100.
+divider <- function(x){
+   x/sum(x)
+}
+df <- ddply(df, "Year", transform, Sales = divider(Sales))
+
+
+
+# 2) Make a plot of the sales and shares per year per company.
+
+ggplot() +
+  geom_line(data = df, aes ( x = Year, y = Sales, group = Product, color = Product)) +
+  theme_classic() +
+  labs(
+        title = "Shares per year per group",
+        x = "Year",
+        y = "Shares") 
+
+```
+
